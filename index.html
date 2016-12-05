@@ -84,15 +84,15 @@
                 <div class="pull-left hide" id="selected-grp">
                     <div class="btn-group btn-inline">
                         <a href="###" onclick="YAAW.tasks.unpause();
-                                YAAW.tasks.unSelectAll();" class="btn" rel="tooltip" title="开始">
+                    YAAW.tasks.unSelectAll();" class="btn" rel="tooltip" title="开始">
                             <i class="icon-play"></i>
                         </a>
                         <a href="###" onclick="YAAW.tasks.pause();
-                                YAAW.tasks.unSelectAll();" class="btn" rel="tooltip" title="暂停">
+                    YAAW.tasks.unSelectAll();" class="btn" rel="tooltip" title="暂停">
                             <i class="icon-pause"></i>
                         </a>
                         <a href="###" onclick="YAAW.tasks.remove();
-                                YAAW.tasks.unSelectAll();" class="btn" rel="tooltip" title="删除">
+                    YAAW.tasks.unSelectAll();" class="btn" rel="tooltip" title="删除">
                             <i class="icon-remove"></i>
                         </a>
                     </div>
@@ -159,7 +159,7 @@
                     <strong>Error:</strong> <span class="alert-msg"></span>
                 </div>
                 <form id="add-task-uri" onsubmit="YAAW.add_task.submit(this);
-                        return false;">
+              return false;">
                     <div class="input-append">
                         <input type="text" name="uri" id="uri-input" class="input-clear" placeholder="HTTP, FTP or Magnet" /><span><input type="file" id="torrent-up-input" /><a id="torrent-up-btn" class="btn" rel="tooltip" title="File API is Not Supported.">上传BT种子</a></span>
                     </div>
@@ -180,7 +180,7 @@
             </div>
             <div class="modal-body">
                 <form id="setting-form" class="form-horizontal" onsubmit="YAAW.setting.submit();
-                        return false;">
+              return false;">
                     <fieldset>
                         <div class="control-group">
                             <label class="control-label" for="rpc-path">JSON-RPC 链接</label>
@@ -193,21 +193,14 @@
                         <div class="control-group">
                             <label class="control-label">自动刷新</label>
                             <div class="controls">
-                                <label class="radio inline" style="width:40px">
-                                    <input type="radio" name="refresh_interval" value="5000"> 每5秒
-                                </label>
-                                <label class="radio inline" style="width:40px">
-                                    <input type="radio" name="refresh_interval" value="10000" checked> 每10秒
-                                </label>
-                                <label class="radio inline" style="width:40px">
-                                    <input type="radio" name="refresh_interval" value="30000"> 每30秒
-                                </label>
-                                <label class="radio inline" style="width:46px">
-                                    <input type="radio" name="refresh_interval" value="300000"> 每5分钟
-                                </label>
-                                <label class="radio inline" style="width:40px">
-                                    <input type="radio" name="refresh_interval" value="0"> 关闭
-                                </label>
+                                <select class="form-control" name="refresh_interval" style="width: 314px;">
+                                    <option value="1000">每秒</option>
+                                    <option value="5000">每5秒</option>
+                                    <option value="10000">每10秒</option>
+                                    <option value="30000">每30秒</option>
+                                    <option value="300000">每5分钟</option>
+                                    <option value="0">关闭</option>
+                                </select>
                             </div>
                         </div>
                     </fieldset>
@@ -442,6 +435,7 @@
             </div>
             </div>
             <div class="clearfix"></div>
+
             <div class="control-group">
             <label class="control-label" for="gsi-ua">User Agent</label>
             <div class="controls">
@@ -464,15 +458,6 @@
         <script src="js/mustache.js"></script>
         <script src="js/aria2.js"></script>
         <script src="js/yaaw.js"></script>
-        <script>
-            var _hmt = _hmt || [];
-            (function () {
-                var hm = document.createElement("script");
-                hm.src = "//hm.baidu.com/hm.js?61442365b695c83411c491a9ed01ef00";
-                var s = document.getElementsByTagName("script")[0];
-                s.parentNode.insertBefore(hm, s);
-            })();
-        </script>
     </body>
 </html>
 <!-- vim: set et sw=2 ts=2 sts=2 ff=unix fenc=utf8: -->
