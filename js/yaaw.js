@@ -666,7 +666,7 @@ var YAAW = (function() {
 
       update: function() {
         $("#setting-form #rpc-path").val(this.jsonrpc_path);
-        $("#setting-form input:radio[name=refresh_interval][value="+this.refresh_interval+"]").attr("checked", true);
+        $("#setting-form select[name=refresh_interval]").val(this.refresh_interval);
         if (this.jsonrpc_history.length) {
           var content = '<ul class="dropdown-menu">';
           $.each(this.jsonrpc_history, function(n, e) {
@@ -683,7 +683,7 @@ var YAAW = (function() {
       submit: function() {
         _this = $("#setting-form");
         var _jsonrpc_path = _this.find("#rpc-path").val();
-        var _refresh_interval = Number(_this.find("input:radio[name=refresh_interval]:checked").val());
+        var _refresh_interval = Number(_this.find("select[name=refresh_interval]").val());
 
         var changed = false;
         if (_jsonrpc_path != undefined && this.jsonrpc_path != _jsonrpc_path) {
