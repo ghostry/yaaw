@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2012 Binux <17175297.hk@gmail.com>
+ * Copyright (C) 2015 Binux <roy@binux.me>
  *
  * This file is part of YAAW (https://github.com/binux/yaaw).
  *
@@ -20,10 +20,14 @@
 
 var YAAW = (function() {
   var selected_tasks = false;
+  var selected_range_start = null;
+  var selected_range_close = null;
   var on_gid = null;
   var torrent_file = null, file_type = null;
   return {
     init: function() {
+      $('#main-control').show();
+
       this.tpl.init();
       this.setting.init();
       this.contextmenu.init();
@@ -40,16 +44,158 @@ var YAAW = (function() {
         }
         ARIA2.refresh();
         ARIA2.auto_refresh(YAAW.setting.refresh_interval);
+        ARIA2.finish_notification = YAAW.setting.finish_notification;
         ARIA2.get_version();
         ARIA2.global_stat();
       });
     },
 
     event_init: function() {
+
+      $("#add-task-submit").live("click", function() {
+        YAAW.add_task.submit();return false;
+      });
+      $("#add-task-uri").submit(function() {
+        YAAW.add_task.submit();return false;
+      });
+      $("#saveSettings").live("click", function() {
+        YAAW.setting.submit();return false;
+      });
+      $("#setting-form").submit(function() {
+        YAAW.setting.submit();return false;
+      });
+      $("#add-task-clear").live("click", function() {
+        YAAW.add_task.clean();
+      });
+      $("#btnRemove").live("click", function() {
+        YAAW.tasks.remove();YAAW.tasks.unSelectAll();
+      });
+      $("#btnPause").live("click", function() {
+        YAAW.tasks.pause();YAAW.tasks.unSelectAll();
+      });
+      $("#btnUnPause").live("click", function() {
+        YAAW.tasks.unpause();YAAW.tasks.unSelectAll();
+      });
+      $("#btnClearAlert").live("click", function() {
+        $('#main-alert').hide();
+      });
+      $("#btnSelectActive").live("click", function() {
+        YAAW.tasks.selectActive();
+      });
+      $("#btnSelectWaiting").live("click", function() {
+        YAAW.tasks.selectWaiting();
+      });
+      $("#btnSelectPaused").live("click", function() {
+        YAAW.tasks.selectPaused();
+      });
+      $("#btnSelectStopped").live("click", function() {
+        YAAW.tasks.selectStopped();
+      });
+      $("#btnStartAll").live("click", function() {
+        ARIA2.unpause_all();
+      });
+      $("#btnPauseAll").live("click", function() {
+        ARIA2.pause_all();
+      });
+      $("#btnRemoveFinished").live("click", function() {
+        ARIA2.purge_download_result();
+      });
+      $("#closeAlert").live("click", function() {
+        $('#add-task-alert').hide();
+      });
+      $("#menuMoveTop").live("click", function() {
+        if (selected_tasks) {
+          YAAW.tasks.movetop();
+          YAAW.tasks.unSelectAll();
+        } else {
+          YAAW.contextmenu.movetop();
+        }
+      });
+      $("#menuMoveUp").live("click", function() {
+        if (selected_tasks) {
+          YAAW.tasks.moveup();
+          YAAW.tasks.unSelectAll();
+        } else {
+          YAAW.contextmenu.moveup();
+        }
+      });
+      $("#menuMoveDown").live("click", function() {
+        if (selected_tasks) {
+          YAAW.tasks.movedown();
+          YAAW.tasks.unSelectAll();
+        } else {
+          YAAW.contextmenu.movedown();
+        }
+      });
+      $("#menuMoveEnd").live("click", function() {
+        if (selected_tasks) {
+          YAAW.tasks.moveend();
+          YAAW.tasks.unSelectAll();
+        } else {
+          YAAW.contextmenu.moveend();
+        }
+      });
+      $("#menuRestart").live("click", function() {
+        if (selected_tasks) {
+          YAAW.tasks.restart();
+          YAAW.tasks.unSelectAll();
+        } else {
+          YAAW.contextmenu.restart();
+        }
+      });
+      $("#menuStart").live("click", function() {
+        if (selected_tasks) {
+          YAAW.tasks.unpause();
+          YAAW.tasks.unSelectAll();
+        } else {
+          YAAW.contextmenu.unpause();
+        }
+      });
+      $("#menuPause").live("click", function() {
+        if (selected_tasks) {
+          YAAW.tasks.pause();
+          YAAW.tasks.unSelectAll();
+        } else {
+          YAAW.contextmenu.pause();
+        }
+      });
+      $("#menuRemove").live("click", function() {
+        if (selected_tasks) {
+          YAAW.tasks.remove();
+          YAAW.tasks.unSelectAll();
+        } else {
+          YAAW.contextmenu.remove();
+        }
+      });
+
+
       $("[rel=tooltip]").tooltip({"placement": "bottom"});
 
-      $(".task .select-box").live("click", function() {
-        YAAW.tasks.toggle($(this).parents(".task"));
+      $(".task .select-box").live("click", function(e) {
+        if (!e.shiftKey) {
+          YAAW.tasks.toggle($(this).parents(".task"));
+          selected_range_start = $(this).parents(".task").hasClass("selected") ? $(this).parents(".task")[0] : null;
+          selected_range_close = null;
+        } else {
+          YAAW.tasks.select($(this).parents(".task"));
+          if (!selected_range_start)
+            selected_range_start = $(this).parents(".task")[0];
+          else if (!selected_range_close)
+            selected_range_close = $(this).parents(".task")[0];
+        }
+        if (selected_range_start && selected_range_close) {
+          if (selected_range_start == selected_range_close) {
+            selected_range_close = null;
+          } else {
+            var task_in_range = false;
+            $(".tasks-table .task").each(function (i, n) {
+              if (n == selected_range_start || n == selected_range_close) task_in_range = !task_in_range;
+              if (task_in_range) YAAW.tasks.select(n);
+            });
+            selected_range_start = selected_range_close;
+            selected_range_close = null;
+          }
+        }
         YAAW.tasks.check_select();
       });
 
@@ -72,13 +218,17 @@ var YAAW = (function() {
         $("#ati-out").parents(".control-group").val("").toggle();
       });
 
-      $("#ib-files li").live("click", function() {
-        $(this).find(".select-box").toggleClass("icon-ok");
+      $("#ib-files .ib-file-title, #ib-files .select-box").live("click", function() {
+        if ($(this).parent().find(".select-box:first").hasClass("icon-ok")) {
+          $(this).parent().find(".select-box").removeClass("icon-ok");
+        } else {
+          $(this).parent().find(".select-box").addClass("icon-ok");
+        }
       });
 
       $("#ib-file-save").live("click", function() {
         var indexes = [];
-        $("#ib-files .select-box.icon-ok").each(function(i, n) {
+        $("#ib-files .select-box.icon-ok[data-index]").each(function(i, n) {
           indexes.push(n.getAttribute("data-index"));
         });
         if (indexes.length == 0) {
@@ -91,22 +241,18 @@ var YAAW = (function() {
         };
       });
 
-      $("#ib-file-select").live("click", function() {
-        $("#ib-files .select-box").addClass("icon-ok");
-      });
-
-      $("#ib-file-unselect").live("click", function() {
-        $("#ib-files .select-box").removeClass("icon-ok");
-      });
-
       $("#ib-options-a").live("click", function() {
         ARIA2.get_options($(".info-box").attr("data-gid"));
+      });
+
+      $("#ib-peers-a").live("click", function() {
+        ARIA2.get_peers($(".info-box").attr("data-gid"));
       });
 
       var active_task_allowed_options = ["max-download-limit", "max-upload-limit"];
       $("#ib-options-save").live("click", function() {
         var options = {};
-        var gid = $(this).parents(".info-box").attr("data-gid")
+        var gid = $(this).parents(".info-box").attr("data-gid");
         var status = $("#task-gid-"+gid).attr("data-status");
         $.each($("#ib-options-form input"), function(n, e) {
           if (status == "active" && active_task_allowed_options.indexOf(e.name) == -1)
@@ -161,7 +307,7 @@ var YAAW = (function() {
         }
       } else {
         $("#torrent-up-input").remove();
-        $("#torrent-up-btn").addClass("disabled");
+        $("#torrent-up-btn").addClass("disabled").tooltip({title: "File API is Not Supported."});
       }
 
       if (window.applicationCache) {
@@ -191,15 +337,93 @@ var YAAW = (function() {
         });
       },
 
+      files_tree: function(files) {
+        var file_dict = {}, f;
+        for (var i = 0; i < files.length; i++) {
+          var at = files[i].title.split('/');
+          f = file_dict;
+          for (var j = 0; j < at.length; j++) {
+            f[at[j]] = f[at[j]] || {};
+            f = f[at[j]];
+          }
+          f['_file'] = files[i];
+        }
+
+        function render(f) {
+          var content = '<ul>';
+
+          for (var k in f) {
+            if (f[k]['_file'] !== undefined) {
+              continue;
+            }
+
+            content += '<li>';
+            content += '<i class="select-box icon-ok"></i>';
+            content += '<span class="ib-file-title">'+$('<div>').text(k).html()+'</span>';
+            content += render(f[k]);
+            content += '</li>';
+          }
+
+          for (k in f) {
+            if (f[k]['_file'] === undefined) {
+              continue;
+            }
+
+            f[k]['_file']['relative_title'] = k;
+            content += YAAW.tpl.file(f[k]['_file']);
+          }
+          content += '</ul>';
+          return content;
+        }
+
+        //console.log(file_dict);
+        return render(file_dict);
+      },
+
       view: {
         bitfield: function() {
+          var graphic = "░▒▓█";
           return function(text) {
             var len = text.length;
             var result = "";
-            var graphic = "░▒▓█";
             for (var i=0; i<len; i++)
-              result += graphic[Math.floor(parseInt(text[i], 16)/4)] + "&#8203;";
+            result += graphic[Math.floor(parseInt(text[i], 16)/4)] + "&#8203;";
             return result;
+          };
+        },
+
+        bitfield_to_10: function() {
+          var graphic = "░▒▓█";
+          return function(text) {
+            var len = text.length;
+            var part_len = Math.ceil(len/10);
+            var result = "";
+            for (var i=0; i<10; i++) {
+              p = 0;
+              for (var j=0; j<part_len; j++) {
+                if (i*part_len+j >= len)
+                  p += 16;
+                else
+                  p += parseInt(text[i*part_len+j], 16);
+              }
+              result += graphic[Math.floor(p/part_len/4)] + "&#8203;";
+            }
+            return result;
+          };
+        },
+
+        bitfield_to_percent: function() {
+          return function(text) {
+            var len = text.length - 1;
+            var p, one = 0;
+            for (var i=0; i<len; i++) {
+              p = parseInt(text[i], 16);
+              for (var j=0; j<4; j++) {
+                one += (p & 1);
+                p >>= 1;
+              }
+            }
+            return Math.floor(one/(4*len)*100).toString();
           };
         },
 
@@ -264,6 +488,24 @@ var YAAW = (function() {
           };
         },
 
+        format_peerid: function() {
+          return function format_peerid(peerid) {
+            try {
+              var ret = window.format_peerid(peerid);
+              if (ret.client == 'unknown') throw 'unknown';
+              return ret.client+(ret.version ? '-'+ret.version : '');
+            } catch(e) {
+              if (peerid == '%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00')
+                return 'unknown';
+              var ret = unescape(peerid).split('-');
+              for (var i=0; i<ret.length; i++) {
+                if (ret[i].trim().length) return ret[i];
+              }
+              return 'unknown';
+            }
+          }
+        },
+
         error_msg: function() {
           var error_code_map = {
             0: "",
@@ -321,7 +563,7 @@ var YAAW = (function() {
 
     add_task: {
       submit: function(_this) {
-        var uri = $("#uri-input").val() || $("#uri-textarea").val() && $("#uri-textarea").val().split("\n") ;
+        var uri = $("#uri-input").val() || $("#uri-textarea").val() && $("#uri-textarea").val().split("\n");
         var options = {}, options_save = {};
         $("#add-task-option input[name], #add-task-option textarea[name]").each(function(i, n) {
           var name = n.getAttribute("name");
@@ -346,7 +588,7 @@ var YAAW = (function() {
           YAAW.setting.save_add_task_option(options_save);
         }
       },
-      
+
       clean: function() {
         $("#uri-input").attr("placeholder", "HTTP, FTP or Magnet");
         $("#add-task-modal .input-clear").val("");
@@ -410,7 +652,7 @@ var YAAW = (function() {
       toggle: function(task) {
         $(task).toggleClass("selected").find(".select-box").toggleClass("icon-ok");
       },
-      
+
       unSelectAll: function(notupdate) {
         var _this = this;
         $(".tasks-table .task.selected").each(function(i, n) {
@@ -455,10 +697,10 @@ var YAAW = (function() {
         this.check_select();
       },
 
-      selectStoped: function() {
+      selectStopped: function() {
         var _this = this;
         this.unSelectAll(true);
-        $("#stoped-tasks-table .task").each(function(i, n) {
+        $("#stopped-tasks-table .task").each(function(i, n) {
           _this.select(n);
         });
         this.check_select();
@@ -472,11 +714,21 @@ var YAAW = (function() {
         return gids;
       },
 
+      restart: function() {
+        var gids = new Array();
+        $(".tasks-table .task.selected").each(function(i, n) {
+          var status = n.getAttribute("data-status");
+          if (status == "removed" || status == "complete" || status == "error")
+            gids.push(n.getAttribute("data-gid"));
+        });
+        if (gids.length) ARIA2.restart_task(gids);
+      },
+
       pause: function() {
         var gids = new Array();
         $(".tasks-table .task.selected").each(function(i, n) {
           if (n.getAttribute("data-status") == "active" ||
-            n.getAttribute("data-status") == "waiting")
+              n.getAttribute("data-status") == "waiting")
             gids.push(n.getAttribute("data-gid"));
         });
         if (gids.length) ARIA2.pause(this.getSelectedGids());
@@ -484,17 +736,17 @@ var YAAW = (function() {
 
       unpause: function() {
         var gids = new Array();
-        var stoped_gids = new Array();
+        var stopped_gids = new Array();
         $(".tasks-table .task.selected").each(function(i, n) {
           var status = n.getAttribute("data-status");
           if (status == "paused") {
             gids.push(n.getAttribute("data-gid"));
           } else if ("removed/error".indexOf(status) != -1) {
-            stoped_gids.push(n.getAttribute("data-gid"));
+            stopped_gids.push(n.getAttribute("data-gid"));
           }
         });
         if (gids.length) ARIA2.unpause(gids);
-        if (stoped_gids.length) ARIA2.restart_task(stoped_gids);
+        if (stopped_gids.length) ARIA2.restart_task(stopped_gids);
       },
 
       remove: function() {
@@ -511,10 +763,52 @@ var YAAW = (function() {
         if (gids.length) ARIA2.remove_result(gids);
       },
 
+      movetop: function() {
+        var gids = new Array();
+        $(".tasks-table .task.selected").each(function(i, n) {
+          if (n.getAttribute("data-status") == "waiting" ||
+              n.getAttribute("data-status") == "paused")
+            gids.push(n.getAttribute("data-gid"));
+        });
+        gids.reverse();
+        ARIA2.change_selected_pos(gids, 0, 'POS_SET');
+      },
+
+      moveup: function() {
+        var gids = new Array();
+        $(".tasks-table .task.selected").each(function(i, n) {
+          if (n.getAttribute("data-status") == "waiting" ||
+              n.getAttribute("data-status") == "paused")
+            gids.push(n.getAttribute("data-gid"));
+        });
+        ARIA2.change_selected_pos(gids, -1, 'POS_CUR');
+      },
+
+      movedown: function() {
+        var gids = new Array();
+        $(".tasks-table .task.selected").each(function(i, n) {
+          if (n.getAttribute("data-status") == "waiting" ||
+              n.getAttribute("data-status") == "paused")
+            gids.push(n.getAttribute("data-gid"));
+        });
+        gids.reverse();
+        ARIA2.change_selected_pos(gids, 1, 'POS_CUR');
+      },
+
+      moveend: function() {
+        var gids = new Array();
+        $(".tasks-table .task.selected").each(function(i, n) {
+          if (n.getAttribute("data-status") == "waiting" ||
+              n.getAttribute("data-status") == "paused")
+            gids.push(n.getAttribute("data-gid"));
+        });
+        ARIA2.change_selected_pos(gids, 0, 'POS_END');
+      },
+
       info: function(task) {
         task.addClass("info-open");
         task.after(YAAW.tpl.info_box({gid: task.attr("data-gid")}));
-        if (task.parents("#stoped-tasks-table").length) {
+        if (task.parents("#stopped-tasks-table").length) {
           $("#ib-options-a").hide();
         }
         ARIA2.get_status(task.attr("data-gid"));
@@ -536,26 +830,43 @@ var YAAW = (function() {
     contextmenu: {
       init: function() {
         $(".task").live("contextmenu", function(ev) {
-          $("#task-contextmenu").css("top", ev.clientY).css("left", ev.clientX).show();
-          on_gid = ""+this.getAttribute("data-gid");
-
           var status = this.getAttribute("data-status");
           if (status == "waiting" || status == "paused")
             $("#task-contextmenu .task-move").show();
           else
             $("#task-contextmenu .task-move").hide();
-          if (status == "removed" || status == "completed" || status == "error") {
+          if (status == "removed" || status == "complete" || status == "error") {
             $(".task-restart").show();
             $(".task-start").hide();
+            $(".task-pause").hide();
           } else {
             $(".task-restart").hide();
-            $(".task-start").show();
+            if (status == "active" || status == "waiting") {
+              $(".task-start").hide();
+              $(".task-pause").show();
+            } else {
+              $(".task-start").show();
+              $(".task-pause").hide();
+            }
           }
+
+          var contextmenu_position_y = ev.clientY;
+          var contextmenu_position_x = ev.clientX;
+          if ($(window).height() - ev.clientY < 200) {
+            contextmenu_position_y = ev.clientY - $("#task-contextmenu").height();
+          }
+          if ($(window).width() - ev.clientX < 200) {
+            contextmenu_position_x = ev.clientX - $("#task-contextmenu").width();
+          }
+          $("#task-contextmenu").css("top", contextmenu_position_y).css("left", contextmenu_position_x).show();
+          on_gid = ""+this.getAttribute("data-gid");
           return false;
         }).live("mouseout", function(ev) {
-          if ($.contains(this, ev.toElement) ||
-            $("#task-contextmenu").get(0) == ev.toElement ||
-            $.contains($("#task-contextmenu").get(0), ev.toElement)) {
+          // toElement is not available in Firefox, use relatedTarget instead.
+          var enteredElement = ev.toElement || ev.relatedTarget;
+          if ($.contains(this, enteredElement) ||
+              $("#task-contextmenu").get(0) == enteredElement ||
+                $.contains($("#task-contextmenu").get(0), enteredElement)) {
             return;
           }
           on_gid = null;
@@ -593,7 +904,14 @@ var YAAW = (function() {
       },
 
       remove: function() {
-        if (on_gid) ARIA2.remove(on_gid);
+        if (on_gid) {
+          var status = $("#task-gid-"+on_gid).attr("data-status");
+          if (status == "removed" || status == "complete" || status == "error") {
+            ARIA2.remove_result(on_gid);
+          } else {
+            ARIA2.remove(on_gid);
+          }
+        }
         on_gid = null;
       },
 
@@ -621,8 +939,9 @@ var YAAW = (function() {
 
     setting: {
       init: function() {
-        this.jsonrpc_path = $.Storage.get("jsonrpc_path") || "http://"+"192.168.1.1"+":6800"+"/jsonrpc";
+        this.jsonrpc_path = $.Storage.get("jsonrpc_path") || location.protocol+"//"+(location.host.split(":")[0]||"localhost")+":6800"+"/jsonrpc";
         this.refresh_interval = Number($.Storage.get("refresh_interval") || 10000);
+        this.finish_notification = Number($.Storage.get("finish_notification") || 1);
         this.add_task_option = $.Storage.get("add_task_option");
         this.jsonrpc_history = JSON.parse($.Storage.get("jsonrpc_history") || "[]");
         if (this.add_task_option) {
@@ -662,12 +981,15 @@ var YAAW = (function() {
           $.Storage.set("jsonrpc_history", JSON.stringify(this.jsonrpc_history));
         }
         $.Storage.set("refresh_interval", String(this.refresh_interval));
+        $.Storage.set("finish_notification", String(this.finish_notification));
       },
 
       update: function() {
         $("#setting-form #rpc-path").val(this.jsonrpc_path);
-        $("#setting-form select[name=refresh_interval]").val(this.refresh_interval);
+        $("#setting-form input:radio[name=refresh_interval][value="+this.refresh_interval+"]").attr("checked", true);
+        $("#setting-form input:radio[name=finish_notification][value="+this.finish_notification+"]").attr("checked", true);
         if (this.jsonrpc_history.length) {
+          $(".rpc-path-wrap .dropdown-menu").remove();
           var content = '<ul class="dropdown-menu">';
           $.each(this.jsonrpc_history, function(n, e) {
             content += '<li><a href="#">'+e+'</a></li>';
@@ -678,28 +1000,40 @@ var YAAW = (function() {
           });
           $(".rpc-path-wrap .dropdown-toggle").removeAttr("disabled").dropdown();
         }
+        if (this.finish_notification && window.Notification && Notification.permission !== "granted") {
+          Notification.requestPermission();
+        }
       },
 
       submit: function() {
         _this = $("#setting-form");
         var _jsonrpc_path = _this.find("#rpc-path").val();
-        var _refresh_interval = Number(_this.find("select[name=refresh_interval]").val());
+        var _refresh_interval = Number(_this.find("input:radio[name=refresh_interval]:checked").val());
+        var _finish_notification = Number(_this.find("input:radio[name=finish_notification]:checked").val());
 
         var changed = false;
-        if (_jsonrpc_path != undefined && this.jsonrpc_path != _jsonrpc_path) {
+        if (_jsonrpc_path !== undefined && this.jsonrpc_path != _jsonrpc_path) {
           this.jsonrpc_path = _jsonrpc_path;
           YAAW.tasks.unSelectAll();
           $("#main-alert").hide();
           YAAW.aria2_init();
           changed = true;
         }
-        if (_refresh_interval != undefined && this.refresh_interval != _refresh_interval) {
+        if (_refresh_interval !== undefined && this.refresh_interval != _refresh_interval) {
           this.refresh_interval = _refresh_interval;
           ARIA2.auto_refresh(this.refresh_interval);
           changed = true;
         }
+        if (_finish_notification !== undefined && this.finish_notification != _finish_notification) {
+          this.finish_notification = _finish_notification;
+          ARIA2.finish_notification = _finish_notification;
+          changed = true;
+        }
         if (changed) {
           this.save();
+        }
+        if (this.finish_notification && window.Notification && Notification.permission !== "granted") {
+          Notification.requestPermission();
         }
 
         // submit aria2 global setting
@@ -713,6 +1047,21 @@ var YAAW = (function() {
         ARIA2.change_global_option(options);
         $("#setting-modal").modal('hide');
       },
+    },
+
+    notification: function(title, content) {
+      if (!window.Notification) {
+        return false;
+      }
+
+      if (Notification.permission !== "granted")
+        Notification.requestPermission();
+
+      var notification = new Notification(title, {
+        body: content,
+      });
+
+      return notification;
     },
   }
 })();
