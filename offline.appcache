@@ -1,11 +1,12 @@
 CACHE MANIFEST
-#2012-9-30 17:23
+#2017-10-15 11:08
 
 CACHE:
 index.html
 css/main.css
 css/bootstrap.min.css
 css/bootstrap-responsive.min.css
+img/favicon.ico
 img/glyphicons-halflings-white.png
 img/glyphicons-halflings.png
 js/jquery-1.7.2.min.js
@@ -14,5 +15,6 @@ js/jquery.jsonrpc.js
 js/jquery.Storage.js
 js/jquery.base64.min.js
 js/mustache.js
+js/peerid.js
 js/aria2.js
 js/yaaw.js
