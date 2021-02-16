@@ -1,6 +1,6 @@
 YAAW
 ====
-汉化版地址：http://yaaw.ghostry.cn/
+汉化版地址：http://yaaw.1ge.fun/
 
 Yet Another Aria2 Web Frontend in pure HTML/CSS/Javascirpt.
 
@@ -41,4 +41,4 @@ You may get a copy of the GNU Lesser General Public License from http://www.gnu.
 
 汉化
 ====
-ghostry（ http://blog.ghostry.cn ）部分汉化
+ghostry（ https://blog.1ge.fun ）部分汉化
